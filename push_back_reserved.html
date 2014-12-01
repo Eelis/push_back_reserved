@@ -89,7 +89,7 @@ there is a call to <tt>reserve</tt> that establishes said precondition. But it's
 
 <h2>V. &nbsp; Measurements</h2>
 
-<p>If <tt>work</tt> above is changed to use <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, it runs about twice as fast on my desktop machine with openSUSE and GCC 4.8. Even with such textbook use of <tt>reserve</tt> immediately preceding the <tt>push_back</tt> calls, the optimizer is not nearly clever enough to optimize the checks away.</p>
+<p>If <tt>work</tt> above is changed to use <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, it runs about twice as fast on my Linux desktop machine with either GCC (4.8) or Clang (3.6). Even with such textbook use of <tt>reserve</tt> immediately preceding the <tt>push_back</tt> calls, the optimizers are not nearly clever enough to optimize the checks away.</p>
 
 <h2>VI. &nbsp; Alternatives</h2>
 
