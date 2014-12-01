@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' 'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'>
+
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
+	<head>
+		<title>Unchecked push_back, to mimic unchecked subscript</title>
+	</head>
+	<body>
+
+<h1>Unchecked <tt>push_back</tt>, to mimic unchecked subscript</h1>
+
+<ul>
+	<li>Document Number: N????</li>
+	<li>Date: 2014-??-??</li>
+	<li>Project: Programming Language C++, ?? Working Group</li>
+	<li>Reply-to:
+		<ul>
+			<li><a href="mailto:wg21@contacts.eelis.net">Eelis van der Weegen</a></li>
+			<li><a href="Victor.Khomenko@ncl.ac.uk">Victor Khomenko</a></li>
+		</ul>
+	</li>
+</ul>
+
+<h2>I. &nbsp; Introduction</h2>
+
+<p>This is a proposal to add new member functions to <tt>std::vector</tt> and <tt>std::basic_string</tt>:</p>
+<pre>
+	void std::vector::push_back_reserved(value_type const &amp;);
+	void std::vector::push_back_reserved(value_type &amp;&amp;);
+
+	void std::vector::emplace_back_reserved(Args &amp;&amp; ...);
+
+	void std::basic_string::push_back_reserved(value_type);
+</pre>
+<p>The only difference between these functions and their non-<tt>_reserved</tt> counterparts, is that
+they have as an additional precondition that <tt>size() != capacity()</tt>. This means they can
+omit capacity checks, and can assume that no reallocation will be required. This means their
+implementation is much simpler and much more efficient.</p>
+
+<h2>II. &nbsp; Motivation</h2>
+
+<p>Suppose we have:</p>
+<pre>
+	struct X
+	{
+		unsigned v;
+		X(unsigned v_): v(v_) {}
+		X() = delete; // maybe because there is no sensible default value for X
+	};
+</pre>
+
+<p>And suppose we have some work to do using a vector of these:</p>
+
+<pre>
+	unsigned work()
+	{
+		auto const n = 256u;
+
+		std::vector&lt;X&gt; a;
+		a.reserve(n);
+		for (unsigned i = 0; i != n; ++i) a.push_back(i);
+
+		unsigned r = 0;
+		for (unsigned i = 0; i != n; ++i) r += a[i].v;
+		return r;
+	}
+</pre>
+
+<p>Great, works like a charm!</p>
+<p>But... the call to <tt>push_back</tt> is grossly
+inefficient, because <tt>push_back</tt> does a capacity check every time, and
+is prepared to reallocate if necessary. Unfortunately, the current
+<tt>vector</tt> interface does not let us communicate our knowledge
+that the check is unnecessary to the vector.</p>
+
+<h2>III. &nbsp; Rationale</h2>
+
+<p>For subscripting, knowledge that checks are unnecessary <em>can</em> be communicated, by using a separate function: <tt>operator[]</tt> instead of <tt>at()</tt>.
+Following this example, we propose separate non-checking versions of the <tt>push_back</tt> and <tt>emplace_back</tt> functions.</p>
+
+<p>The name <tt>push_back_reserved</tt> is suitably long for a "dangerous" function, is fairly suggestive
+of its precondition, and reads naturally when earlier in the code
+there is a call to <tt>reserve</tt> that establishes said precondition. But it's just a suggestion &mdash; <tt>unchecked_push_back</tt> also seems popular.</p>
+
+<h2>IV. &nbsp; Implementation</h2>
+
+<p>This is a matter of copy-pasting the implementation of the non-<tt>_reserved</tt> counterparts and removing the capacity checks.</p>
+
+<h2>V. &nbsp; Measurements</h2>
+
+<p>If <tt>work</tt> above is changed to use <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, it runs about twice as fast on my desktop machine with openSUSE and GCC 4.8. Even with such textbook use of <tt>reserve</tt> immediately preceding the <tt>push_back</tt> calls, the optimizer is not nearly clever enough to optimize the checks away.</p>
+
+<h2>VI. &nbsp; Alternatives</h2>
+
+<ul>
+	<li><p>Had <tt>X</tt> been default constructible, we could have used <tt>std::vector&lt;X&gt; a(n);</tt> instead.</p><p>Apart from the fact that this does not work for types that are not default constructible, it also means we violate the "prefer initialization over assignment" principle.</p></li>
+
+	<li><p>Use some kind of iterator pair over a virtual sequence of Xs and construct the vector from that.</p><p>This is a very roundabout solution.</p></li>
+
+	<li><p>Use a custom allocator for the vector which does evil trickery.</p><p>This is an extremely roundabout and fragile solution.</p></li>
+</ul>
+
+<h2>VII. &nbsp; Possible further additions</h2>
+<ul>
+	<li><tt>reserved_back_inserter</tt></li>
+</ul>
+
+<h2>VIII. &nbsp; Proposed wording</h2>
+<p>Can be provided if there is interest.</p>
+
+
+<h2>IX. &nbsp; References</h2>
+<ol>
+	<li>...</li>
+	<li>...</li>
+	<li>...</li>
+</ol>
+
+	</body>
+</html>
