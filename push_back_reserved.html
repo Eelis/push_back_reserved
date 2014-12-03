@@ -33,11 +33,11 @@
             ...
           public:<span style='color:#00aa00'>
 
-            void push_back_reserved(value_type const &amp;);
-            void push_back_reserved(value_type &amp;&amp;);
+            void push_back<b>_reserved</b>(value_type const &amp;);
+            void push_back<b>_reserved</b>(value_type &amp;&amp;);
 
             template &lt;typename... Args&gt;
-            void emplace_back_reserved(Args &amp;&amp; ...);
+            void emplace_back<b>_reserved</b>(Args &amp;&amp; ...);
 
             static vector of_capacity(size_type); // optional</span>
         };
@@ -47,12 +47,11 @@
             ...
           public:<span style='color:#00aa00'>
 
-            void push_back_reserved(value_type);</span>
+            void push_back<b>_reserved</b>(value_type) noexcept;</span>
         };
     }
 </pre>
-<p>The only difference between the <tt>_reserved</tt> functions and their non-<tt>_reserved</tt> counterparts, is that
-they have as an additional precondition that <tt>size() != capacity()</tt>. This means they can
+<p>The only difference between {<tt>push</tt>, <tt>emplace</tt>}<tt>_back_reserved</tt> and {<tt>push</tt>, <tt>emplace</tt>}<tt>_back</tt> is that the former have as an additional precondition that <tt>size() != capacity()</tt>. This means they can
 omit capacity checks, and can assume that no reallocation will be required. This means their
 implementation is much simpler and much more efficient.</p>
 
@@ -97,13 +96,14 @@ that the check is unnecessary to the vector.</p>
 <p>For subscripting, knowledge that checks are unnecessary <em>can</em> be communicated, by using a separate function: <tt>operator[]</tt> instead of <tt>at()</tt>.
 Following this example, we propose separate non-checking versions of the <tt>push_back</tt> and <tt>emplace_back</tt> functions.</p>
 
-<p>The name <tt>push_back_reserved</tt> is suitably long for a "dangerous" function, is fairly suggestive
-of its precondition, and reads naturally when earlier in the code
-there is a call to <tt>reserve</tt> that establishes said precondition. But it's just a suggestion &mdash; <tt>unchecked_push_back</tt> also seems popular.</p>
+<p>The {<tt>push</tt>, <tt>emplace</tt>}<tt>_back_reserved</tt> names are suitably long for
+"dangerous" functions, are fairly suggestive of the precondition, and read naturally when
+earlier in the code there is a call to <tt>reserve</tt> that establishes said precondition.
+But they're just a suggestion &mdash; <tt>unchecked_</tt>{<tt>push</tt>, <tt>emplace</tt>}<tt>_back</tt> also seem popular.</p>
 
 <h2>IV. &nbsp; Implementation</h2>
 
-<p>This is a matter of copy-pasting the implementation of the non-<tt>_reserved</tt> counterparts and removing the capacity checks.</p>
+<p>This is a matter of copy-pasting {<tt>push</tt>, <tt>emplace</tt>}<tt>_back</tt> and removing the capacity checks.</p>
 
 <h2>V. &nbsp; Measurements</h2>
 
@@ -126,15 +126,14 @@ there is a call to <tt>reserve</tt> that establishes said precondition. But it's
 
 <h2>VII. &nbsp; Vectors of immovable objects</h2>
 
-<p>Because <tt>emplace_back_reserved</tt> does not potentially reallocate, it
+<p>Because <tt>std::vector::emplace_back_reserved</tt> does not potentially reallocate, it
 does not require movability of the element type. This means we may use it to
-populate a <tt>std::vector</tt> with a non-movable element type,
-provided we can arrange for capacity somehow.</p>
+populate a vector with non-movable element type, provided we can arrange for capacity somehow.</p>
 
-<p>Making <tt>std::vector</tt> usable with non-movable element types could be
-very worthwhile. Unfortunately, we could not use <tt>reserve</tt> to arrange
-for capacity in such a vector, because it requires movability. One inefficient
-and non-general workaround could be:</p>
+<p>Making <tt>std::vector</tt> more usable with non-movable element types (such as
+one may encounter in legacy code) could be very worthwhile. Unfortunately, we could
+not use <tt>reserve</tt> to arrange for capacity in such a vector, because it
+requires movability. One inefficient and non-general workaround could be:</p>
 
 <pre>
     std::vector&lt;ImmovableStone&gt; v(n);
@@ -148,7 +147,7 @@ and non-general workaround could be:</p>
     v.emplace_back_reserved(...);
     ...
 </pre>
-<p>But much nicer would be to have <tt>of_capacity</tt>, because it would let us say:</p>
+<p>Much better would be to have <tt>of_capacity</tt>, because it would let us say:</p>
 <pre>
     auto v = std::vector&lt;ImmovableStone&gt;::of_capacity(n);
 
@@ -166,13 +165,14 @@ and non-general workaround could be:</p>
 <h2>IX. &nbsp; Proposed wording</h2>
 <p>Can be provided if there is interest.</p>
 
-
+<!--
 <h2>X. &nbsp; References</h2>
 <ol>
 	<li>...</li>
 	<li>...</li>
 	<li>...</li>
 </ol>
+-->
 
 	</body>
 </html>
