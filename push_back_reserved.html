@@ -94,7 +94,7 @@ there is a call to <tt>reserve</tt> that establishes said precondition. But it's
 
 <h2>V. &nbsp; Measurements</h2>
 
-<p>If <tt>work</tt> above is changed to use <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, it runs about twice as fast on my Linux desktop machine with either GCC (4.8) or Clang (3.6). Even with such textbook use of <tt>reserve</tt> immediately preceding the <tt>push_back</tt> calls, the optimizers are not nearly clever enough to optimize the checks away.</p>
+<p>If <tt>work</tt> above is changed to use <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, it runs about twice as fast on a regular Linux desktop machine with either GCC (4.8) or Clang (3.6). Even with such textbook use of <tt>reserve</tt> immediately preceding the <tt>push_back</tt> calls, the optimizers are not nearly clever enough to optimize the checks away.</p>
 
 <h2>VI. &nbsp; Alternatives</h2>
 
@@ -119,15 +119,18 @@ for capacity in such a vector, because it requires movability. One inefficient
 and non-general workaround could be:</p>
 
 <pre>
-	std::vector&lt;T&gt; v(n);
+	std::vector&lt;ImmovableStone&gt; v(n);
+		// hopefully no side effects from default constructed stones!
 
 	v.erase(v.begin(), v.end());
 		// not clear(), because that may reduce capacity
 
-	assert(v.capacity() == n);
-		// good, can now populate with emplace_back_reserved()
+	assert(v.capacity() &gt;= n);
+
+	v.emplace_back_reserved(...);
+	...
 </pre>
-<p>But much nicer would be:</p>
+<p>But much nicer would be to have:</p>
 <pre>
 	namespace std {
 		template &lt;...&gt; class vector {
@@ -135,9 +138,10 @@ and non-general workaround could be:</p>
 			static vector of_capacity(size_type);
 			...
 </pre>
-<p>because this would let us do</p>
+<p>Because this would let us say:</p>
 <pre>
-	auto v = std::vector&lt;ImmovableStone&gt;::of_capacity(5);
+	auto v = std::vector&lt;ImmovableStone&gt;::of_capacity(n);
+
 	v.emplace_back_reserved(...);
 	...
 </pre>
