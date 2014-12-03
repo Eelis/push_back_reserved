@@ -114,7 +114,12 @@ there is a call to <tt>reserve</tt> that establishes said precondition. But it's
 <ul>
 	<li><p>Had <tt>X</tt> been default constructible, we could have used <tt>std::vector&lt;X&gt; a(n);</tt> instead.</p><p>Apart from the fact that this does not work for types that are not default constructible, it also means we violate the "prefer initialization over assignment" principle.</p></li>
 
-	<li><p>Use some kind of iterator pair over a virtual sequence of Xs and construct the vector from that.</p><p>This is a very roundabout solution.</p></li>
+	<li>
+		<p>Use some kind of iterator pair over a virtual sequence of Xs and construct the vector from that.</p>
+		<p>
+			This is a very roundabout solution that only covers the special case where all the Xs to be inserted are known at the point of construction of the vector.
+		</p>
+	</li>
 
 	<li><p>Use a custom allocator for the vector which does evil trickery.</p><p>This is an extremely roundabout and fragile solution.</p></li>
 </ul>
