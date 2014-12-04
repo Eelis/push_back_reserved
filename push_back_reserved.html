@@ -127,12 +127,13 @@ But they're just a suggestion &mdash; <tt>unchecked_</tt>{<tt>push</tt>, <tt>emp
 	</li>
 
 	<li>
-		<p>Abandon <tt>std::vector</tt> and use a custom container.</p>
+		<p>Abandon <tt>std::vector</tt> and use a custom container or manually managed buffer.</p>
 		<p>
-			Several people have suggested this alternative, but <tt>std::vector</tt>
+			Several people have suggested this alternative, but since
+			<tt>std::vector</tt>
 			is supposed to be the standard negligible-overhead answer
-			to manually managed dynamically sized buffers, which
-			means optimally efficient back insertion for known-capacity cases
+			to manually managed dynamically sized buffers, supporting
+			overhead-free back insertion for known-capacity cases
 			should be a no-brainer.
 		</p>
 	</li>
