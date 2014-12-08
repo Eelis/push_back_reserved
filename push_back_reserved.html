@@ -4,11 +4,12 @@
 
 <html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>
 	<head>
-		<title>Unchecked push_back and std::vectors of immovable objects</title>
+		<title>Unchecked back insertion and vectors of immovable objects</title>
+		<meta charset="utf-8"/>
 	</head>
 	<body>
 
-<h1>Unchecked <tt>push_back</tt> and <tt>std::vector</tt>s of immovable objects</h1>
+<h1>Unchecked back insertion and vectors of immovable objects</h1>
 
 <ul>
 	<li>Document Number: N????</li>
@@ -17,45 +18,64 @@
 	<li>Reply-to:
 		<ul>
 			<li><a href="mailto:wg21@contacts.eelis.net">Eelis van der Weegen</a></li>
-			<li><a href="Victor.Khomenko@ncl.ac.uk">Victor Khomenko</a></li>
+			<li><a href="mailto:Victor.Khomenko@ncl.ac.uk">Victor Khomenko</a></li>
 		</ul>
 	</li>
 </ul>
 
 <h2>I. &nbsp; Introduction</h2>
 
-<p>This is a proposal to add new member functions to <tt>std::vector</tt> and <tt>std::basic_string</tt>:</p>
+<p>This is a proposal to add support for <em>unchecked</em> back insertion into vectors and strings:</p>
 <pre>
     namespace std {
+      template &lt;class T, class Allocator = allocator&lt;T&gt;&gt;
+      class <b>vector</b> {
+      public:
+        <i>// modifiers:</i>
+        template &lt;class... Args&gt; void emplace_back(Args&amp;&amp;... args);<span style='color:#00aa00'>
+        template &lt;class... Args&gt; void emplace_back<em>_reserved</em>(Args&amp;&amp;... args);</span>
+        void push_back(const T&amp; x);
+        void push_back(T&amp;&amp; x);<span style='color:#00aa00'>
+        void push_back<em>_reserved</em>(T const&amp; x);
+        void push_back<em>_reserved</em>(T&amp;&amp; x);</span>
+        void pop_back();
 
-        template &lt;...&gt;
-        class vector {
-            ...
-          public:<span style='color:#00aa00'>
+        <i>// capacity</i><span style='color:#00aa00'>
+        static vector of_capacity(size_type n, const Allocator&amp; = Allocator());</span>
+      };
 
-            void push_back<b>_reserved</b>(value_type const &amp;);
-            void push_back<b>_reserved</b>(value_type &amp;&amp;);
 
-            template &lt;typename... Args&gt;
-            void emplace_back<b>_reserved</b>(Args &amp;&amp; ...);
+      template &lt;class charT, class traits = char_traits&lt;charT&gt;,
+        class Allocator = allocator&lt;charT&gt;&gt;
+      class <b>basic_string</b> {
+      public:
+        <i>// modifiers</i><span style='color:#00aa00'>
+        void push_back<em>_reserved</em>(charT c);
+        basic_string&amp; append<em>_reserved</em>(const basic_string&amp; str);
+        basic_string&amp; append<em>_reserved</em>(const basic_string&amp; str, size_type pos, size_type n);
+        basic_string&amp; append<em>_reserved</em>(const charT* s, size_type n);
+        basic_string&amp; append<em>_reserved</em>(const charT* s);
+        basic_string&amp; append<em>_reserved</em>(size_type n, charT c);
+        template&lt;class InputIterator&gt;
+          basic_string&amp; append<em>_reserved</em>(InputIterator first, InputIterator last);
+        basic_string&amp; append<em>_reserved</em>(initializer_list&lt;charT&gt;);</span>
+      };
 
-            static vector of_capacity(size_type); // optional</span>
-        };
+      <span style='color:#00aa00'>
+      template &lt;class Container&gt;
+      class <em>reserved_</em>back_insert_iterator { <i>/* obvious */</i> };
 
-        template &lt;...&gt;
-        class basic_string {
-            ...
-          public:<span style='color:#00aa00'>
-
-            void push_back<b>_reserved</b>(value_type);</span>
-        };
+      template &lt;class Container&gt;
+      <em>reserved_</em>back_insert_iterator&lt;Container&gt; <em>reserved_</em>back_inserter(Container&amp; x);</span>
     }
 </pre>
-<p>The only difference between {<tt>push</tt>, <tt>emplace</tt>}<tt>_back_reserved</tt> and {<tt>push</tt>, <tt>emplace</tt>}<tt>_back</tt> is that the former have as an additional precondition that <tt>size() != capacity()</tt>. This means they can
+<p>The only difference between the newly proposed <tt><i>_reserved</i></tt> functions and their existing non-<tt><i>_reserved</i></tt> counterparts is that the former have as an additional precondition that the vector (resp. string) already have sufficient capacity for the newly inserted element(s). For <tt>push_back_reserved</tt> and <tt>emplace_back_reserved</tt>, that means <tt>size() != capacity()</tt>. This means they can
 omit capacity checks, and can assume that no reallocation will be required. This means their
 implementation is much simpler and much more efficient.</p>
 
 <p><tt>vector::emplace_back_reserved</tt> enables insertion into vectors of immovable objects, for which the static <tt>of_capacity</tt> utility function would be very helpful; see Section VII.</p>
+
+<p>The 7 <tt>basic_string::append_reserved</tt> overloads would be nice to have, but can be omitted from the proposal without much impact, considering that in practice likely most use cases for unchecked back insertion will be covered by <tt>push_back_reserved</tt> (together with, for <tt>vector</tt>, <tt>emplace_back_reserved</tt>) and <tt>reserved_back_inserter</tt>.
 
 <h2>II. &nbsp; Motivation</h2>
 
@@ -107,12 +127,14 @@ But they're just a suggestion &mdash; <tt>unchecked_</tt>{<tt>push</tt>, <tt>emp
 
 <h2>V. &nbsp; Measurements</h2>
 
-<p>If <tt>work</tt> above is changed to use <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, it runs about twice as fast on a regular Linux desktop machine with either GCC (4.8) or Clang (3.6). Even with such textbook use of <tt>reserve</tt> immediately preceding the <tt>push_back</tt> calls, the optimizers are not nearly clever enough to optimize the checks away.</p>
+<p>If <tt>work</tt> above is changed to use <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, it runs about twice as fast on a regular Linux desktop machine with either GCC (4.8) or Clang (3.6). Even with such textbook use of <tt>reserve</tt> immediately preceding the <tt>push_back</tt> calls, these compilers are not nearly clever enough to optimize the checks away.</p>
 
 <h2>VI. &nbsp; Alternatives</h2>
 
-<ul>
-	<li><p>Had <tt>X</tt> been default constructible, we could have used <tt>std::vector&lt;X&gt; a(n);</tt> instead.</p><p>Apart from the fact that this does not work for types that are not default constructible, it also means we violate the "prefer initialization over assignment" principle.</p></li>
+<ol>
+	<li>
+		<p>Default-construct instead of reserve.</p>
+		<p>That is, had <tt>X</tt> been default constructible, we could have used <tt>std::vector&lt;X&gt; a(n);</tt> instead.</p><p>Apart from the fact that this does not work for types that are not default constructible, it also means we violate the "prefer initialization over assignment" principle.</p></li>
 
 	<li>
 		<p>Use some kind of iterator pair over a virtual sequence of Xs and construct the vector from that.</p>
@@ -127,17 +149,34 @@ But they're just a suggestion &mdash; <tt>unchecked_</tt>{<tt>push</tt>, <tt>emp
 	</li>
 
 	<li>
+		<p>Wait until compilers <em>are</em> clever enough (perhaps given some guidance) to optimize the checks away.</p>
+		<p>This is perhaps the most interesting alternative. We know from tools for C and Java such as
+		<a href="http://frama-c.com/acsl_tutorial_index.html">Frama-C</a>,
+		<a href="https://vcc.codeplex.com/">VCC</a>,
+		<a href="http://nl.mathworks.com/products/polyspace-code-prover/">Polyspace</a>,
+		<a href="http://www.astree.ens.fr/">Astrée</a> and
+		<a href="http://kindsoftware.com/products/opensource/ESCJava2/">ESC/Java2</a>, that state of the art verifiers can, with
+		success rate strongly dependent
+		on how richly code is annotated in tool-dependent ways with pre-/post-conditions and invariants,
+		prove that things like array indexing and pointer/reference operations are safe and will not be out of bounds. Such techniques could in principle be applied to C++ and the optimization problem of back insertion check removal.</p>
+
+		<p>The Halting problem implies that these techniques are always incomplete: in general it is undecidable whether there is sufficient capacity for an unchecked back insertion into a given vector/string at a given point in a program. However, with rigorous annotation of pre/post-conditions and invariants, the aforementioned tools can still cover a significant number of cases.</p>
+
+		<p>Thus, in principle, an advanced compiler whose optimizer essentially includes an integrated verifier could also cover a significant number of cases, for richly annotated code. But there is neither standardized mechanism nor tradition for such annotation in C++ (though "contracts" have been proposed as a step in that direction). Without annotation, the success rate drops rapidly.</p>
+		
+		<p>Hence, realistically, if we want the efficiency of unchecked back insertion into vectors/strings any time <em>soon</em>, we cannot put our hopes in compilers or novel ways of communicating assurances to compilers, and need a library solution that will reliably deliver the desired performance with the current generation of compilers.</p>
+	</li>
+	<li>
 		<p>Abandon <tt>std::vector</tt> and use a custom container or manually managed buffer.</p>
 		<p>
-			Several people have suggested this alternative, but since
-			<tt>std::vector</tt>
-			is supposed to be the standard negligible-overhead answer
-			to manually managed dynamically sized buffers, supporting
+			Several people have suggested this alternative, saying that this is not what <tt>std::vector</tt>/<tt>std::string</tt> are for, but we disagree. Since these containers
+			are supposed to be the standard overhead-free answer
+			to manually managed dynamically sized buffers,
 			overhead-free back insertion for known-capacity cases
-			should be a no-brainer.
+			is <em>exactly</em> what they should provide.
 		</p>
 	</li>
-</ul>
+</ol>
 
 <h2>VII. &nbsp; Vectors of immovable objects</h2>
 
@@ -170,12 +209,8 @@ requires movability. One inefficient and non-general workaround could be:</p>
     ...
 </pre>
 
-<h2>VIII. &nbsp; Possible further additions</h2>
-<ul>
-	<li>
-		<p><tt>reserved_back_inserter</tt> would enable lightning-fast <tt>&lt;algorithm&gt;</tt>-based insertion into vectors with known sufficient capacity.</p>
-	</li>
-</ul>
+<h2>VIII. &nbsp; <tt><em>reserved_</em>back_inserter()</tt></h2>
+<p>.. returns a <tt><em>reserved_</em>back_insert_iterator</tt> that calls <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, enabling lightning-fast <tt>&lt;algorithm&gt;</tt>-based back insertion into vectors/strings with known sufficient capacity.</p>
 
 <h2>IX. &nbsp; Proposed wording</h2>
 <p>Can be provided if there is interest.</p>
