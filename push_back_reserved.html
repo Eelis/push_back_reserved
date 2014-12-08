@@ -157,7 +157,7 @@ But they're just a suggestion &mdash; <tt>unchecked_</tt> also seems popular.</p
 		<a href="http://www.astree.ens.fr/">Astrée</a> and
 		<a href="http://kindsoftware.com/products/opensource/ESCJava2/">ESC/Java2</a>, that state of the art verifiers can, with
 		success rate strongly dependent
-		on how richly code is annotated in tool-dependent ways with pre-/post-conditions and invariants,
+		on how richly code is annotated (in tool-dependent ways) with pre-/post-conditions and invariants,
 		prove that things like array indexing and pointer/reference operations are safe and will not be out of bounds. While not traditionally applied to optimization, such advanced verification techniques could in principle be applied to C++ and the optimization problem of back insertion check removal, since ultimately this boils down to deciding whether <tt>v.size()!=v.capacity()</tt> holds for a given <tt>v</tt> at a given point in a program.</p>
 
 		<p>The Halting problem implies that these techniques are always incomplete: in general it is undecidable whether there is sufficient capacity for an unchecked back insertion into a given vector/string at a given point in a program. However, with rigorous annotation of pre/post-conditions and invariants, the aforementioned tools can still cover a significant number of cases.</p>
@@ -167,12 +167,12 @@ But they're just a suggestion &mdash; <tt>unchecked_</tt> also seems popular.</p
 		<p>Hence, realistically, if we want the efficiency of unchecked back insertion into vectors/strings any time <em>soon</em>, we cannot put our hopes in compilers or novel ways of communicating assurances to compilers, and need a library solution that will reliably deliver the desired performance with the current generation of compilers.</p>
 	</li>
 	<li>
-		<p>Abandon <tt>std::vector</tt> and use a custom container or manually managed buffer.</p>
+		<p>Abandon <tt>std::vector</tt>/<tt>std::string</tt> and use a custom container or manually managed buffer.</p>
 		<p>
-			Several people have suggested this alternative, saying that this is not what <tt>std::vector</tt>/<tt>std::string</tt> are for, but we disagree. Since these containers
+			Several people have suggested this alternative, saying that this is not what <tt>std::vector</tt> and <tt>std::string</tt> are for, but we disagree. These containers
 			are supposed to be the standard overhead-free answer
 			to manually managed dynamically sized buffers,
-			overhead-free back insertion for known-capacity cases
+			so overhead-free back insertion for known-capacity cases
 			is <em>exactly</em> what they should provide.
 		</p>
 	</li>
@@ -180,7 +180,7 @@ But they're just a suggestion &mdash; <tt>unchecked_</tt> also seems popular.</p
 
 <h2>VII. &nbsp; Vectors of immovable objects</h2>
 
-<p>Because <tt>std::vector::emplace_back_reserved</tt> does not potentially reallocate, it
+<p>Because <tt>vector::emplace_back_reserved</tt> does not potentially reallocate, it
 does not require movability of the element type. This means we may use it to
 populate a vector with non-movable element type, provided we can arrange for capacity somehow.</p>
 
@@ -209,7 +209,7 @@ requires movability. One inefficient and non-general workaround could be:</p>
     ...
 </pre>
 
-<p>There is no need for <tt><em>string</em>::of_capacity</tt>, because a string of immovable characters does not make much sense anyway.</p>
+<p>There is no need for <tt><em>basic_string</em>::of_capacity</tt>, because use cases for strings of immovable characters are hard to imagine.</p>
 
 <h2>VIII. &nbsp; <tt><em>reserved_</em>back_inserter()</tt></h2>
 <p>&hellip; returns a <tt><em>reserved_</em>back_insert_iterator</tt> that calls <tt>push_back_reserved</tt> instead of <tt>push_back</tt>, enabling lightning-fast <tt>&lt;algorithm&gt;</tt>-based back insertion into vectors/strings with known sufficient capacity.</p>
