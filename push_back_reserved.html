@@ -75,7 +75,7 @@
 
 <p><tt>vector::emplace_back_reserved</tt> enables insertion into vectors of immovable objects, for which the static <tt>of_capacity</tt> utility function would be very helpful; see Section VII.</p>
 
-<p>The seven <tt>basic_string::append_reserved</tt> overloads would be nice to have, but can be omitted from the proposal without much impact, considering that in practice likely most use cases for unchecked back insertion will be covered by <tt>push_back_reserved</tt> (together with, for <tt>vector</tt>, <tt>emplace_back_reserved</tt>) and <tt>reserved_back_inserter</tt>.</p>
+<p>The seven <tt>basic_string::append_reserved</tt> overloads would be nice to have, but can be omitted from the proposal without much impact, considering that in practice most use cases for unchecked back insertion will likely be covered by <tt>push_back_reserved</tt> (together with, for <tt>vector</tt>, <tt>emplace_back_reserved</tt>) and <tt>reserved_back_inserter</tt>.</p>
 
 <h2>II. &nbsp; Motivation</h2>
 
