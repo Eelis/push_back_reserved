@@ -123,7 +123,7 @@ But they're just a suggestion &mdash; <tt>unchecked_</tt> also seems popular.</p
 
 <h2>IV. &nbsp; Implementation</h2>
 
-<p>This is a matter of copy-pasting {<tt>push</tt>, <tt>emplace</tt>}<tt>_back</tt> and removing the capacity checks.</p>
+<p>This is a matter of copy-pasting the implementation of the non-<tt>_reserved</tt> back insertion functions, renaming them, and removing the capacity checks.</p>
 
 <h2>V. &nbsp; Measurements</h2>
 
